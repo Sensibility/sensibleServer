@@ -1,0 +1,5 @@
+# README in reStructuredText format
+include README.rst
+
+# License information
+include LICENSE.txt
