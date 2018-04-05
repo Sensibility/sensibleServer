@@ -44,7 +44,11 @@ def main() -> int:
 	import http.server as Server
 	from . import cgiserver
 
-	handler = cgiserver.CGIServer if CGI else Server.SimpleHTTPRequestHandler
+	if CGI:
+		os.environ['DOCUMENT_ROOT'] = ROOT
+		handler = cgiserver.CGIServer
+	else:
+		Server.SimpleHTTPRequestHandler
 
 	with Server.HTTPServer(("", 8000), handler) as server:
 		print("Serving at port 8000")
