@@ -41,21 +41,25 @@ def main() -> int:
 
 	CGI = args.enable_cgi
 
-	import http.server as Server
-	from . import cgiserver
 
 	if CGI:
+		from . import server
 		os.environ['DOCUMENT_ROOT'] = ROOT
-		handler = cgiserver.CGIServer
-	else:
-		Server.SimpleHTTPRequestHandler
+		handler = server.CGIServer
 
-	with Server.HTTPServer(("", 8000), handler) as server:
-		print("Serving at port 8000")
-		try:
-			server.serve_forever()
-		except KeyboardInterrupt:
-			pass
+		with Server.HTTPServer(("", 8000), handler) as server:
+			print("Serving at port 8000")
+			try:
+				server.serve_forever()
+			except KeyboardInterrupt:
+				pass
+	else:
+		from .server import Server, RequestHandler
+		with Server(("", 8080), RequestHandler) as server:
+			try:
+				server.serve_forever()
+			except KeyboardInterrupt:
+				pass
 
 	return 0
 
