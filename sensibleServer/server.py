@@ -5,7 +5,7 @@ This module contains the basic CGI HTTP(S) server object.
 from http.server import CGIHTTPRequestHandler, _url_collapse_path as collapsePath
 import os
 import typing
-# import socket
+import magic
 import socketserver
 from . import ROOT
 
@@ -67,17 +67,6 @@ class CGIServer(CGIHTTPRequestHandler):
 
 		return False
 
-MIMES = {"html": b"text/html",
-         "txt": b"text/plain",
-         "js": b"text/javascript",
-         "css": b"text/css",
-         "png": b"image/png",
-         "jpg": b"image/jpg",
-         "jpeg": b"image/jpg",
-         "svg": b"image/svg+xml",
-         "json": b"application/json",
-         "ttf": b"application/font-woff2"}
-
 class MethodError(Exception):
 	"""An exception raised if an unrecognized or unsupported method is requested"""
 	pass
@@ -121,7 +110,7 @@ class RequestHandler(socketserver.BaseRequestHandler):
 
 	def handleHead(self, path: str, headers: typing.Dict[str, str], unused_body) -> bytes:
 		"""Handles a HEAD request"""
-		return b''
+		return self.handleGet(path, headers, unused_body).split(b'\r\n\r\n')[0] + b'\r\n\r\n'
 
 
 	# Handling for different methods
@@ -167,15 +156,13 @@ class RequestHandler(socketserver.BaseRequestHandler):
 				log(e)
 
 	@staticmethod
-	def determineMIME(path) -> bytes:
+	def determineMIME(path: str) -> bytes:
 		"""Determines and returns the MIME type of a given resource path"""
-		# if path in self.server.specialPaths or '/'+path in self.server.specialPaths:
-		# 	return b'text/html'
 
 		fname = path.split('/')[-1].split('.')
-		if len(fname) < 2 or fname[-1] not in MIMES:
+		if len(fname) < 2:
 			return b'text/plain'
-		return MIMES[fname[-1]]
+		return magic.from_file(path, mime=True).encode()
 
 class Server(socketserver.ThreadingTCPServer):
 	"""A basic server object that serves static content"""
