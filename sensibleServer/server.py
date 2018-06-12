@@ -134,6 +134,7 @@ class RequestHandler(socketserver.BaseRequestHandler):
 				payload = f.read()
 
 			resp.append(b'Content-Length: %d' % len(payload))
+			resp.append(b'Server: sensibleServer 0.0.1')
 			resp.append(b'')
 			resp.append(payload)
 			return b'\r\n'.join(resp)
