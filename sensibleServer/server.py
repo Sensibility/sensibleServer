@@ -26,6 +26,11 @@ else:
 		"""
 		pass
 
+# For whatever reason, python-magic thinks css and js have 'text/plain' mime types,
+# so those need to be overridden
+MIME_OVERRIDES = {'css': b'text/css',
+                  'js': b'text/javascript'}
+
 
 class CGIServer(CGIHTTPRequestHandler):
 	"""
@@ -98,7 +103,7 @@ class RequestHandler(socketserver.BaseRequestHandler):
 					if general == mime[0] and specific == mime[1]:
 						break
 				else:
-					return b'HTTP/1.1 406 Not Acceptable\r\n\r\n'
+					return b'\r\n'.join((b'HTTP/1.1 406 Not Acceptable\r\n', b'/'.join(mime)))
 
 			resp.append(b'Content-Type: %s' % b'/'.join(mime))
 
@@ -167,10 +172,13 @@ class RequestHandler(socketserver.BaseRequestHandler):
 	@staticmethod
 	def determineMIME(path: str) -> bytes:
 		"""Determines and returns the MIME type of a given resource path"""
+		global MIME_OVERRIDES
 
 		fname = path.split('/')[-1].split('.')
 		if len(fname) < 2:
 			return b'text/plain'
+		if fname[1] in MIME_OVERRIDES:
+			return MIME_OVERRIDES[fname[1]]
 		return magic.from_file(path, mime=True).encode()
 
 class Server(socketserver.ThreadingTCPServer):
