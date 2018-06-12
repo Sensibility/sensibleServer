@@ -104,10 +104,45 @@ class RequestHandler(socketserver.BaseRequestHandler):
 		        b'<body style="font-family: serif;">',
 		        b'<h1>404 - Not Found</h1>',
 		        b'<p>The server could not find the URL you specified.</p>',
-		        b'</body>'
+		        b'</body>',
 		        b'</html>')
 
 		return b'\r\n'.join(page)
+
+	@staticmethod
+	def FiveHundredPage() -> bytes:
+		"""
+		Returns a default 500 Error page, containing exception information if in debug mode.
+		"""
+
+		headers = (b'HTTP/1.1 500 Internal Server Error',
+		           b'Content-Type: text/html',
+		           b'Content-Length: %d',
+		           b'Server: sensibleServer 0.0.1',
+		           b'',
+		           b'<!DOCTYPE html>',
+		           b'<html lang="en">',
+		           b'<head>',
+		           b'<meta charset="utf-8"/>',
+		           b'<title>500-Internal Server Error</title>',
+		           b'</head>',
+		           b'<body>',
+		           b'<h1>500 - Internal Server Error</h1>')
+		headers = b'\r\n'.join(headers)
+
+		if __debug__:
+			from traceback import format_exc
+			content = format_exc().replace('&', "&amp;")
+			for seq, esc in {'"', "&quot;", "'": "&#39;", '<': "&lt;", '>': "&gt"}.values():
+				content = content.replace(seq, esc)
+			content = "<p>Here's a stack trace of the error:</p>\n<pre>%s</pre>" % (content,)
+		else:
+			content = "<p>The server experienced an error processing your request</p>"
+
+		content = content.encode()
+		headers %= 185 + len(content)
+
+		return b'\r\n'.join((headers, content, b'</body>', b'</html>', b''))
 
 	def handleGet(self, path: str, headers: typing.Dict[str, str], unused_body) -> bytes:
 		"""Handles a GET request"""
@@ -192,6 +227,9 @@ class RequestHandler(socketserver.BaseRequestHandler):
 		except (UnicodeError, ValueError, IndexError) as e:
 			self.request.sendall(b'HTTP/1.1 400 Bad Request\r\n\r\n')
 			log(e)
+		except:
+			# Catch-all 500 page
+			return self.FiveHundredPage()
 
 	@staticmethod
 	def determineMIME(path: str) -> bytes:
