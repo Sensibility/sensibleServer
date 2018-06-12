@@ -56,6 +56,10 @@ def main() -> int:
 	else:
 		from .server import Server, RequestHandler
 		with Server(("", 8080), RequestHandler) as server:
+			print("Serving at port 8080", file=stderr)
+			if __debug__:
+				from time import time
+				print("II:", time(), "Directory Contents:", ' '.join(i for i in os.listdir(ROOT)), sep='\t', file=stderr)
 			try:
 				server.serve_forever()
 			except KeyboardInterrupt:
