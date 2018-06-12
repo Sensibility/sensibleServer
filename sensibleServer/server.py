@@ -86,6 +86,27 @@ class RequestHandler(socketserver.BaseRequestHandler):
 	"""Handles a single request in `self.handle()`"""
 	maxRequestSize = 4096
 
+	@staticmethod
+	def FourOhFourPage() -> bytes:
+		"""
+		Returns a default, basic 404 page
+		"""
+		page = (b'HTTP/1.1 404 Not Found',
+		        b'Server: sensibleServer 0.0.1\r\n',
+		        b'<!DOCTYPE html>',
+		        b'<html lang="en">',
+		        b'<head>',
+		        b'<meta charset="utf-8"/>',
+		        b'<title>404-Not Found</title>',
+		        b'</head>',
+		        b'<body style="font-family: serif;">',
+		        b'<h1>404 - Not Found</h1>',
+		        b'<p>The server could not find the URL you specified.</p>',
+		        b'</body>'
+		        b'</html>')
+
+		return b'\r\n'.join(page)
+
 	def handleGet(self, path: str, headers: typing.Dict[str, str], unused_body) -> bytes:
 		"""Handles a GET request"""
 		path = path.lstrip('/')
@@ -114,7 +135,7 @@ class RequestHandler(socketserver.BaseRequestHandler):
 			resp.append(b'')
 			resp.append(payload)
 			return b'\r\n'.join(resp)
-		return b'HTTP/1.1 404 Not Found\r\n\r\n'
+		return self.FourOhFourPage()
 
 	def handleHead(self, path: str, headers: typing.Dict[str, str], body) -> bytes:
 		"""Handles a HEAD request"""
