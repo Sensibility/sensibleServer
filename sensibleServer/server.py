@@ -92,6 +92,8 @@ class RequestHandler(socketserver.BaseRequestHandler):
 		Returns a default, basic 404 page
 		"""
 		page = (b'HTTP/1.1 404 Not Found',
+		        b'Content-Length: 242',
+		        b'Content-Type: text/html',
 		        b'Server: sensibleServer 0.0.1\r\n',
 		        b'<!DOCTYPE html>',
 		        b'<html lang="en">',
