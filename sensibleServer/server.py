@@ -19,6 +19,12 @@ if __debug__:
 		"""
 		now = datetime.today()
 		print("II:", now, *msg, sep='\t', file=stderr)
+else:
+	def log(*unused_args):
+		"""
+		Dummy function that doesn't log.
+		"""
+		pass
 
 
 class CGIServer(CGIHTTPRequestHandler):
@@ -79,17 +85,14 @@ class RequestHandler(socketserver.BaseRequestHandler):
 		"""Handles a GET request"""
 		path = path.lstrip('/')
 		if os.path.isfile(path):
-			if __debug__:
-				log("Serving file:", path)
+			log("Serving file:", path)
 			resp = [b'HTTP/1.1 200 OK']
 			mime = self.determineMIME(path).split(b'/')
-			if __debug__:
-				log("MIME:", mime)
+			log("MIME:", mime)
 			if "Accept" in headers:
 				expected = [tuple(x.encode() for x in h.split('/')) for h in headers["Accept"].split(',')]
 				for general, specific in expected:
-					if __debug__:
-						log("Expecting: %s/%s" % (general, specific))
+					log("Expecting: %s/%s" % (general, specific))
 					if general == b'*' and specific == b'*':
 						break
 					if general == mime[0] and specific == mime[1]:
@@ -108,14 +111,22 @@ class RequestHandler(socketserver.BaseRequestHandler):
 			return b'\r\n'.join(resp)
 		return b'HTTP/1.1 404 Not Found\r\n\r\n'
 
-	def handleHead(self, path: str, headers: typing.Dict[str, str], unused_body) -> bytes:
+	def handleHead(self, path: str, headers: typing.Dict[str, str], body) -> bytes:
 		"""Handles a HEAD request"""
-		return self.handleGet(path, headers, unused_body).split(b'\r\n\r\n')[0] + b'\r\n\r\n'
+		return self.handleGet(path, headers, body).split(b'\r\n\r\n')[0] + b'\r\n\r\n'
+
+	def handleBrew(self, unused_path, unused_headers, unused_body) -> bytes:
+		"""
+		As this server is only meant to run on teapot hardware, it can never handle BREW
+		requests.
+		"""
+		return b"HTTP/1.1 418 I'm a teapot\r\n\r\n"
 
 
 	# Handling for different methods
 	supportedMethods = {"GET": handleGet,
-	                    "HEAD": handleHead}
+	                    "HEAD": handleHead,
+	                    "BREW": handleBrew}
 
 	def handle(self):
 		"""Handles a single request."""
@@ -141,8 +152,7 @@ class RequestHandler(socketserver.BaseRequestHandler):
 
 				headers[header] = value
 
-			if __debug__:
-				log("Servicing request for", self.client_address[0], "Request:", method, path, protocol)
+			log("Servicing request for", self.client_address[0], "Request:", method, path, protocol)
 
 			response = type(self).supportedMethods[method](self, path, headers, None)
 
@@ -152,8 +162,7 @@ class RequestHandler(socketserver.BaseRequestHandler):
 
 		except (UnicodeError, ValueError, IndexError) as e:
 			self.request.sendall(b'HTTP/1.1 400 Bad Request\r\n\r\n')
-			if __debug__:
-				log(e)
+			log(e)
 
 	@staticmethod
 	def determineMIME(path: str) -> bytes:
