@@ -229,6 +229,8 @@ class RequestHandler(socketserver.BaseRequestHandler):
 			log(e)
 		except:
 			# Catch-all 500 page
+			from traceback import format_exc
+			log(format_exc())
 			return self.FiveHundredPage()
 
 	@staticmethod
